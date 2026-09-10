@@ -3,8 +3,8 @@
 | Status  | Proposed   |
 |---------|------------|
 | Author  | @brsmnv    |
-| Created | 2026-08-31 |
-| Updated | 2026-08-31 |
+| Created | 2026-09-10 |
+| Updated | 2026-09-10 |
 | RFC PR  | TBD        |
 
 ## Summary
@@ -13,6 +13,8 @@ The Platform Mesh marketplace offers managed services to consumer workspaces acr
 
 The platform must enable content administrators to limit visibility and explicitly configure which managed services are available to a particular organization.
 
+**Content administrators:** a designated group for platform-level marketplace operators.
+
 ## Motivation
 
 At the moment every PM user sees the same set of service provider offerings. There is no way to configure the enabled set and match visible services to the ones intended to be consumed by an organization.
@@ -20,7 +22,7 @@ At the moment every PM user sees the same set of service provider offerings. The
 
 ## Context and Problem Statement
 
-Currently the only control mechanism available are the APIExportPolicies ([ADR 002](../adr/002-apiexport-binding-access-control.md)). They back the APIBinding authorization and the set of allowed accounts is consulted at binding time.
+Currently the only control mechanism available is the APIExportPolicy ([ADR 002](../adr/002-apiexport-binding-access-control.md)). They back the APIBinding authorization and the set of allowed accounts is consulted at binding time.
 
 Hiding an entry should not cause existing resource instances to become hidden, unavailable or deleted. Discovery and authorization are two orthogonal concepts. A separate resource describing the set of discoverable and visible services is needed.
 
@@ -30,6 +32,7 @@ Hiding an entry should not cause existing resource instances to become hidden, u
 - The set of entries enabled for an organization can be inspected.
 - Organization users can not self-grant.
 - Designated users and groups are permitted to create the "grant" resources.
+- Organization with no grants sees an empty marketplace.
 
 ## Non-Goals
 
@@ -52,9 +55,9 @@ Hiding an entry should not cause existing resource instances to become hidden, u
 
 ### VisibilityGrant
 
-The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace.
+The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace. Workspace paths are mutable and can be reused, whereas Cluster IDs are unique.
 
-The resource has no status and the desired state is purely inferred from the spec.
+The resource has no status. There is nothing to reconcile and resolve.
 
 Example manifest:
 ```yaml
@@ -71,7 +74,7 @@ spec:
 
 ### Use
 
-**Management / Authoring:** Content administrators create the resource into the organization workspace. 
+**Management / Authoring:** Content administrators create the resource in the organization workspace. 
 
 There are two ways to allow the write:
 - Directly in the org workspace, through its kcp API endpoint. The write must pass the workspace RBAC *and* the maximal permission policy (MPP) of the VisibilityGrant APIExport.
@@ -81,7 +84,7 @@ There are two ways to allow the write:
 
 **Reader / Watcher:** The `virtual-workspaces` service uses the APIExportEndpointSlice of the VG APIExport to retrieve the virtual workspace URL. Grants across every organization that bound the export are watched.
 
-**Enforcing:** The marketplace lister uses the resource on every request. It takes the workspace path from the request, cuts it to the organization level and reads the grant stored there. Entries are filtered by the retrieved grants. The default is no grants and an empty marketplace.
+**Enforcing:** The marketplace lister uses the resource on every request. It takes the workspace path from the request, cuts it to the organization level and reads the grants stored there. Entries are filtered by the retrieved grants. The default is no grants and an empty marketplace.
 
 
 ```mermaid
