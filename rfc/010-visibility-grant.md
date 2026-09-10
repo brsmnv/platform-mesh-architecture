@@ -57,11 +57,11 @@ Hiding an entry should not cause existing resource instances to become hidden, u
 
 A new cluster-scoped resource defines the providers and APIExports the subject can list. 
 
-The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace. Workspace paths are mutable and can be reused, whereas cluster IDs are unique.
+The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace. Workspace paths are mutable and can be reused, whereas cluster IDs are stable and never reused..
 
-The resource has no status. There is nothing to reconcile and resolve.
+The resource has no status. There is nothing to resolve and reconcile.
 
-The grant does not explicitly name a subject. The workspace it is created in is the subject, and the resource applies to that workspace and its descendants.
+The grant does not explicitly name a subject. The workspace it is created in is the subject. Grants are read at the organization level and apply to every workspace below it.
 
 Example manifest:
 ```yaml
@@ -161,7 +161,7 @@ account below it. There is no way to narrow the visible set for a single account
 
 ### Removing a grant does not remove the resources
 
-This is by design, as retracting marketplace offerings should not result in unmanageable, orphaned or deleted resources. Resource entries still visible in the sidebar as their `APIBinding` still exists.
+This is by design, as retracting marketplace offerings should not result in unmanageable, orphaned or deleted resources. Resource types are still visible in the sidebar as their `APIBinding` still exists.
 
 ## Open Questions
 
@@ -171,7 +171,7 @@ This is by design, as retracting marketplace offerings should not result in unma
 ## Migration / Implementation Roadmap
 
 ### Setup
-- A VisibilityGrant APIExport is created in `root:platform-mesh-system`. 
+- The `visibility.platform-mesh.io` APIExport is created in `root:platform-mesh-system`. 
 - RBAC manifests are created next to the APIExport.
 - Each organization using the Marketplace binds the new VisibilityGrant APIExport.
 - Designated content administrators create Visibility Grant resources in target organizations.
