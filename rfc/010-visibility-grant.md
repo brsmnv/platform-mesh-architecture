@@ -55,9 +55,13 @@ Hiding an entry should not cause existing resource instances to become hidden, u
 
 ### VisibilityGrant
 
-The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace. Workspace paths are mutable and can be reused, whereas Cluster IDs are unique.
+A new cluster-scoped resource defines the providers and APIExports the subject can list. 
+
+The resource spec has a single `providers` field. A provider is described by its logical cluster ID, and a list of APIExports in its workspace. Workspace paths are mutable and can be reused, whereas cluster IDs are unique.
 
 The resource has no status. There is nothing to reconcile and resolve.
+
+The grant does not explicitly name a subject. The workspace it is created in is the subject, and the resource applies to that workspace and its descendants.
 
 Example manifest:
 ```yaml
@@ -80,7 +84,7 @@ There are two ways to allow the write:
 - Directly in the org workspace, through its kcp API endpoint. The write must pass the workspace RBAC *and* the maximal permission policy (MPP) of the VisibilityGrant APIExport.
 - Through the APIExport's virtual workspace. This requires write access to the `apiexports/content` subresource in the export workspace. Organization workspace RBAC is not necessary.
 
-**Organizations cannot self-grant.** The APIExport sets `maximalPermissionPolicy: local`, and the roles in the export workspace give only the content administrator group the write verbs. 
+**Organizations cannot self-grant.** The APIExport sets `maximalPermissionPolicy: local`, and the roles in the export workspace give only the content administrator group the write verbs. See [kcp MPP](https://docs.kcp.io/kcp/v0.32/concepts/apis/exporting-apis/#maximal-permission-policy) for details.
 
 **Reader / Watcher:** The `virtual-workspaces` service uses the APIExportEndpointSlice of the VisibilityGrant APIExport to retrieve the virtual workspace URL. Grants across every organization that bound the export are watched.
 
@@ -106,7 +110,7 @@ flowchart LR
   mp -->|entries filtered by grants| user
 ```
 
-RBAC, all of it in `root:platform-mesh--system` (the location of the APIExport):
+RBAC, all of it in `root:platform-mesh-system` (the location of the APIExport):
 
 | Permission | Subject | Purpose |
 |---|---|---|
@@ -131,7 +135,7 @@ The canonical home is configurable through `--visibility-home-pattern` with `roo
 The first iteration included a design relying on resources in root:orgs. It was rejected for multiple reasons:
 - Status fields with resolved IDs (spec fields contained paths), reconciler as a workaround.
 - Filtering by org required additional indexing.
-- Writing the resources required access to root:org.
+- Writing the resources required access to root:orgs.
 
 ### Walking up the workspace tree and aggregating
 
@@ -144,7 +148,7 @@ A similar approach to what this RFC proposes, but with a tree walk to aggregate 
 
 ### Visibility does not guarantee confidentiality
 
-The grant filters a listing and steers service discovery. An organization with e.g. prior knowledge and existing APIExportPolicies can still bind the resources.
+The grant filters a listing and steers service discovery. An organization that knows the provider cluster ID and export name, and has an APIExportPolicy allowing it, can still bind resources.
 
 ### The marketplace Virtual Workspace does not authorize the caller
 
@@ -169,7 +173,7 @@ This is by design, as retracting marketplace offerings should not result in unma
 ### Setup
 - A VisibilityGrant APIExport is created in `root:platform-mesh-system`. 
 - RBAC manifests are created next to the APIExport.
-- Each organization using the Marketplace binds the new VisibilityGrant APIPExport.
+- Each organization using the Marketplace binds the new VisibilityGrant APIExport.
 - Designated content administrators create Visibility Grant resources in target organizations.
 - Organization tenants can only see APIExports listed in their grant(s).
 
